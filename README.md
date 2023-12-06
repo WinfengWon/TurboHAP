@@ -3,7 +3,8 @@ The source code of paper "TurboHAP: A More Confident Method for Heterogeneous As
 
 # Note
 We prove the effectiveness of TurboHAP with path structures.
-However, we cannot provide the source code of DAG structure, since the probabilities of common nodes are calculated multiple times. This phenomenon is described in  DAG_Heu, and it is found that DAG_Heu cannot solve the problem of common node.
+
+However, we cannot provide the source code of DAG structure, since the **probabilities of common nodes** are calculated multiple times. This **phenomenon** is described in  DAG_Heu, and it is found that **DAG_Heu cannot solve the problem of common node**.
 We believe TurboHAP can outperforms DAG_Heu in DAG structure, since we have bit strings trace the redundant probabilities of common nodes.
 
 # Input form
