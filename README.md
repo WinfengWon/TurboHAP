@@ -9,18 +9,33 @@ We believe TurboHAP can outperforms DAG_Heu in DAG structure, since we have bit 
 
 # Input form
 For example, the default input is formed as follows:
+
 Node number
+
 the number of FU types for node 0
+
 FU type 1
+
 entry0
+
 entry1
+
 FU type 2
+
 entry0
+
 entry1
+
 the number of FU types for node 1
+
 FU type 1
+
 entry0
+
 entry1
+
 FU type 2
+
 entry0
+
 entry1
