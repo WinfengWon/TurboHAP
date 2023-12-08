@@ -9,6 +9,7 @@ However, we cannot provide the source code of DAG structure, since the **probabi
 We believe TurboHAP can outperforms DAG_Heu in DAG structure, since we have bit strings trace the redundant probabilities of common nodes.
 
 # Input form
+## Path
 For example, the default input is formed as follows:  
 Node number  
 the number of FU types for node 0  
@@ -25,3 +26,7 @@ entry1
 FU type 2  
 entry0  
 entry1  
+
+## Tree
+We use the popular [transformer](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) model as the graph structure, which is actually tree structure.  
+The number of nodes is determined by a parameter "N".
