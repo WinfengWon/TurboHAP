@@ -29,4 +29,4 @@ entry1
 
 ## Tree
 We use the popular [transformer](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) model as the graph structure, which is actually tree structure.  
-The number of nodes is determined by a parameter "N".
+The node data is the same as that in path.
