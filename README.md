@@ -2,7 +2,7 @@
 The source code of paper "TurboHAP: A More Confident Method for Heterogeneous Assignment with  Probability While Satisfying Hard/Soft Timing Constraints"
 
 # Note
-We prove the effectiveness of TurboHAP with path structures.
+We prove the effectiveness of TurboHAP with both path and tree structures.
 
 However, we cannot provide the source code of DAG structure, since the **probabilities of common nodes** are calculated multiple times. This **phenomenon** is described in  DAG_Heu, and it is found that **DAG_Heu cannot solve the problem of common node**.
 
