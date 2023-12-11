@@ -30,3 +30,5 @@ entry1
 ## Tree
 We use the popular [transformer](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) model as the graph structure, which is actually tree structure.  
 The node data is the same as that in path.
+![image](https://github.com/WinfengWon/TurboHAP/assets/153063846/13ebe7ef-c611-4a2d-81f2-2a3c741dcf1c)
+The image is cited from <<[Attention Is All You Need](https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)>>
