@@ -28,10 +28,6 @@ FU type 2
 entry0  
 entry1  
 
-The graph of path is as follows.
-
-<img src="https://github.com/WinfengWon/TurboHAP/assets/153063846/33bab960-2bcf-492e-8b8a-96b32bcc05d5" alt="图片描述" width="300">
-
 ## Tree
 We use the popular transformer model as the graph structure, which is actually tree structure.  
 The node data is the same as that in path.  
