@@ -5,7 +5,7 @@
 #include <assert.h>
 #include<math.h>
 #include <chrono>
-#define NodeNumber 70
+#define NodeNumber 70 //Maximum number of nodes
 #define FUtypeNumber 2 //Maximum number of FU types
 #define EntryNumber 2 //Maximum number of entries within a FU type of a node
 #define TimeColum 20 //Maximum allowed time for each node
@@ -36,17 +36,17 @@ struct TimProCos {
 list <ProbAndCostPair> D[NodeNumber][TimeColum*NodeNumber]; //Maximum allowed time for D table = TimeColum*NodeNumber
 list <ProbAndCostPair> B[NodeNumber][TimeColum]; //B table, stores information about each node itself
 TimProCos Data[NodeNumber][FUtypeNumber][EntryNumber];
-int EntryNumOfData[NodeNumber][FUtypeNumber]={0}; //Record how many time variation within each FU type of each node has
+int EntryNumOfData[NodeNumber][FUtypeNumber]={0}; //Record the number of entries within each FU type of each node
 int MaxTimeOfB[NodeNumber]={0}; //Record maximum time of each node
-int Node_num; //number of nodes of input 
+int Node_num; //Number of nodes of input 
 int count_equal = 0;
 
 void inputData() {
     cin >> Node_num;
     for (int i = 0; i < Node_num; i++) {
-        int FU_num; cin >> FU_num; //How many FU types the current node has
+        int FU_num; cin >> FU_num; //Number of FU types of the current node
         for (int j = 0; j < FU_num; j++) {
-            int entry_num; cin >> entry_num; //How many entries the current FU type has
+            int entry_num; cin >> entry_num; //Number of entries of the current FU type
             for (int k = 0; k < entry_num; k++) {
                 int time, cost;
                 double probability;
@@ -104,9 +104,9 @@ void creatTableB() {
         list <TimProCos> Bentry;
         TimProCos a;
         double accumulate;
-        int time=0; //time is uesd to temporarily record the maximum time of current node
+        int time=0; //`time` is uesd to temporarily record the maximum time of current node
         for (int j = 0; j<FUtypeNumber; j++){
-            accumulate=0; //For a new FU type, set accumulate as 0  
+            accumulate=0; //For a new FU type, set `accumulate` as 0  
             for (int k = 0; k < EntryNumOfData[i][j]; k++) {
                 a = Data[i][j][k];
                 accumulate+=Data[i][j][k].probability;

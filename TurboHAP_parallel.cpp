@@ -1,9 +1,9 @@
 /* 
-1.block
-2. sort by costs
-3. without appending
-4. parallel
- */
+1.Blocking
+2.Sort by costs
+3.Without intermediate appending
+4.Parallel execution
+*/
 #include <iostream>
 #include <vector>
 #include<assert.h>
@@ -15,14 +15,14 @@
 #include<math.h>
 #include "TurboHAP.h"
 using namespace std;
-void inputData() {
+void Input_data() {
 
     cin >> Node_num;
     B.resize(Node_num);
     for (int i = 0; i < Node_num; i++) {
-        int FU_num; cin >> FU_num;//当前node有多少个FU类型
+        int FU_num; cin >> FU_num; // Number of FU types of the current node
         for (int j = 0; j < FU_num; j++) {
-            int entry_num; cin >> entry_num;//当前FU类型有多少个输入(即有多少种Time可能)
+            int entry_num; cin >> entry_num; // Number of entries of the current FU type
             EntryNumOfData[i][j]=entry_num;
             for (int k = 0; k < entry_num; k++) {
                 int time, cost;
@@ -37,9 +37,6 @@ void inputData() {
     }
 }
 
-/*
-* 参数用的是引用
-*/
 void Newremoval(list<Btable>& L)
 {
     for (list<Btable>::iterator i = L.begin(); i != --L.end();) 
@@ -66,22 +63,13 @@ void Newremoval(list<Btable>& L)
     }
     return;
 }
-// bool compareProb(const Btable &a, const Btable &b)
-// {
-//     return a.prob < b.prob;
-// }
-bool compareCost(const Btable &a, const Btable &b)
+bool Compare_cost(const Btable &a, const Btable &b)
 {
     return a.cost < b.cost;
 }
-void removal(list<Btable>& L)
+void Merging(list<Btable>& L)
 {
-    L.sort(compareCost);
-    Newremoval(L);
-}
-void BitMapRemoval(list<Btable>& L)
-{
-    L.sort(compareCost);
+    L.sort(Compare_cost);
     for(list<Btable>::iterator i = L.begin(); i !=L.end();i++)
     for(list<Btable>::iterator j = i; j !=L.end();j++)
     {
@@ -92,21 +80,21 @@ void BitMapRemoval(list<Btable>& L)
         assert(i->FUtypeArr.size()==j->FUtypeArr.size());
 
         int x=0;
-        for(;x<i->FUtypeArr.size();x++) //判断是否整个assignments都相等
+        for(;x<i->FUtypeArr.size();x++) // Determine if the 2 assignments are equal
         {
             if(i->FUtypeArr[x]!=j->FUtypeArr[x]) break;
         }
         if(x!=i->FUtypeArr.size()) continue;
 
-        if(i->bitmaps.size()>j->bitmaps.size())//没有注意到i和j的bitmaps长度关系，可能会造成段错误(越界访问)
+        if(i->bit_string.size()>j->bit_string.size()) // Select the one with longer bit_string as foundation
         {
-            i->UnionTwoE(j->bitmaps);
+            i->UnionTwoE(j->bit_string);
             if(i->prob>1) i->prob=1.0;
             j->cost=-1;
         }
         else
         {
-            j->UnionTwoE(i->bitmaps);
+            j->UnionTwoE(i->bit_string);
             if(j->prob>1) j->prob=1.0;
             i->cost=-1;
         }
@@ -121,21 +109,24 @@ void BitMapRemoval(list<Btable>& L)
     }
     return;
 }
-void PrintPair(list<Btable>& L)
+void Redundant_without_merging(list<Btable>& L)
 {
-    for (list<Btable>::iterator i = L.begin(); i != L.end(); i++)
-        printf("<%f,%d>...", i->prob, i->cost);
+    L.sort(Compare_cost);
+    Newremoval(L);
 }
-
-void creatTableB() {
+void Redundant_with_merging(list<Btable>& L)
+{
+    Merging(L);
+    Newremoval(L);
+}
+void Creat_Btable() {
     list<vector<list<Btable>>>::iterator B_iter=B.begin();
     for (int i = 0; i < Node_num; i++,B_iter++) 
     {       
-        B_iter->resize(MaxTimeOfB[i]+1);//由于vector从0开始，所以要比最大时间+1进行初始化
+        B_iter->resize(MaxTimeOfB[i]+1);
         for (int j = 0; j<FUtypeNumber; j++)
         {
-            double accumulate=0; //每次一个新类型，都需要归零accumulate   
-            
+            double accumulate=0;
             for (int k = 0; k < EntryNumOfData[i][j]; k++) {
                 Btable a;
                 a.cost = Data[i][j][k].cost;
@@ -144,20 +135,17 @@ void creatTableB() {
                 a.entry=k;
                 accumulate+=Data[i][j][k].probability;
                 a.prob=accumulate;
-                // assert(abs(a.probability - 1) < 1e-3);
-                a.initial(j,k,i); //初始化从Event继承来的成员，j表示此时FUtypeArr插入的第一个元素，k表示当前选择的事件，i表示start节点，end也初始化为start
-                
-                (*B_iter)[a.time].push_back(a);
+                a.initial(j,k,i); // Initialize the quadruple
+                (*B_iter)[a.time].push_back(a); // Insert quadruple in linked list
             }
         }
 
         for(int t=2;t<=MaxTimeOfB[i];t++)
         {
-            (*B_iter)[t].insert((*B_iter)[t].end(),(*B_iter)[t-1].begin(),(*B_iter)[t-1].end());//把前面一个格子的数据加到当前格子
-            removal((*B_iter)[t]);
+            (*B_iter)[t].insert((*B_iter)[t].end(),(*B_iter)[t-1].begin(),(*B_iter)[t-1].end()); // Appending
+            Redundant_without_merging((*B_iter)[t]); // Apply redundant_without_merging for B table
         }
 
-        // 以下模块用于输出Table B的信息
         if(DebugTableB){
             printf("node %d:\n",i);
             for(int t=1;t<=MaxTimeOfB[i];t++)
@@ -172,16 +160,16 @@ void creatTableB() {
     }  
     return;
 }
-list<Btable> Circle_Multiply(list<Btable>& L1,list<Btable>& L2){ //把两个Btable列表相乘
+list<Btable> Circle_Multiply(list<Btable>& L1,list<Btable>& L2){
     list<Btable> L;
     for(list<Btable>::iterator i=L1.begin();i!=L1.end();i++)
         for(list<Btable>::iterator j=L2.begin();j!=L2.end();j++){
-            L.push_back(i->circle_multiply(*j));//Btable.circle_multiply返回的是一个Btable对象，不改变这里的i和j
+            L.push_back(i->circle_multiply(*j));
         }
     return L;
 }
 
-list<Btable> Circle_Multiply_Without_Bitmap(list<Btable>& L1,list<Btable>& L2){
+list<Btable> Circle_Multiply_Without_Bitstring(list<Btable>& L1,list<Btable>& L2){
     list<Btable> L;
     for(list<Btable>::iterator i=L1.begin();i!=L1.end();i++)
         for(list<Btable>::iterator j=L2.begin();j!=L2.end();j++){
@@ -194,34 +182,30 @@ list<Btable> Circle_Multiply_Without_Bitmap(list<Btable>& L1,list<Btable>& L2){
     return L;
 }
 
+// Each thread handles a block
 void thread_function(list<vector<list<Btable>>>::iterator B_iter, list<vector<list<Btable>>>::iterator iend){
     list<vector<list<Btable>>>::iterator i=B_iter;
     i++;
-    while(i!=iend) // 在一次循环内，B_iter是首个节点，i是当前正在合并进首节点的节点，iend是尾节点。
-    {
-        
-        vector<list<Btable>> Mul_result(B_iter->size()+i->size()-1);//两个节点处理之后的结果存放处
-        for(int x=1;x<B_iter->size();x++)//x和y分别遍历两个节点的时间可能性
+    while(i!=iend)
+    { 
+        vector<list<Btable>> Mul_result(B_iter->size()+i->size()-1);
+        for(int x=1;x<B_iter->size();x++)
         {
-            if((*B_iter)[x].size()==0) continue;//如果格子为空
+            if((*B_iter)[x].size()==0) continue;
             for(int y=1;y<i->size();y++)
             {
-                if((*i)[y].size()==0) continue;//如果格子为空
+                if((*i)[y].size()==0) continue;
                 list<Btable> L=Circle_Multiply((*B_iter)[x],(*i)[y]);
                     Mul_result[x+y].insert(Mul_result[x+y].end(),L.begin(),L.end());
             }
         }
-        // *B_iter=Mul_result;
         B_iter->swap(Mul_result);
         for(int x=1;x<B_iter->size()-1;x++)
         {
-            
-            BitMapRemoval((*B_iter)[x]);
-            Newremoval((*B_iter)[x]);
+            Redundant_with_merging((*B_iter)[x]);
             // (*B_iter)[x+1].insert((*B_iter)[x+1].end(),(*B_iter)[x].begin(),(*B_iter)[x].end());
         }
-        BitMapRemoval((*B_iter)[B_iter->size()-1]);
-        Newremoval((*B_iter)[B_iter->size()-1]);
+        Redundant_with_merging((*B_iter)[B_iter->size()-1]);
         auto index_delete=i;
         i++;
         B.erase(index_delete);     
@@ -229,19 +213,21 @@ void thread_function(list<vector<list<Btable>>>::iterator B_iter, list<vector<li
     pthread_exit(NULL);
     return;
 }
-void Path_Assign(int stride) {  
-    list<vector<list<Btable>>>::iterator B_iter=B.begin();//从头开始
+
+//
+void Parallel_blocking(int stride){
+    list<vector<list<Btable>>>::iterator B_iter=B.begin();
     int pthread_count=B.size()%stride==0?B.size()/stride:B.size()/stride+1;
     int pthread_i=0;
     thread threads[pthread_count];
     list<vector<list<Btable>>>::iterator iend=B_iter;
     // auto start_time = std::chrono::high_resolution_clock::now();
-    while(B_iter!=B.end())//只要迭代器还没到达最后，则继续
+    while(B_iter!=B.end())
     {   
         for(int t=0;t<stride;t++)
         {
             iend++;
-            if(iend==B.end()) break;//假设i从节点0开始，则iend指向节点3，则我们要处理的是0、1、2，然后让B_iter直接跳到iend
+            if(iend==B.end()) break;
         }
         threads[pthread_i++]=thread(thread_function,B_iter,iend);
         B_iter=iend;
@@ -254,24 +240,24 @@ void Path_Assign(int stride) {
     // cout << "parallel part executing time" << duration.count() << "ms\n";
     return;
 }
-void Path_Wrong() {  
-    list<vector<list<Btable>>>::iterator B_iter=B.begin();//从头开始
+void Merge_blocks() {  
+    list<vector<list<Btable>>>::iterator B_iter=B.begin();
     list<vector<list<Btable>>>::iterator i=B_iter;
     i++;
     int count=0;
     while(i!=B.end())
     {
         
-        vector<list<Btable>> Mul_result(B_iter->size()+i->size()-1);//两个节点处理之后的结果存放处
+        vector<list<Btable>> Mul_result(B_iter->size()+i->size()-1);
         // cout<<chrono::duration_cast<std::chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time).count()<<endl;
-        for(int x=1;x<B_iter->size();x++)//x和y分别遍历两个节点的时间可能性
+        for(int x=1;x<B_iter->size();x++)
         {
-            if((*B_iter)[x].size()==0) continue;//如果格子为空
+            if((*B_iter)[x].size()==0) continue;
             for(int y=1;y<i->size();y++)
             {
-                if((*i)[y].size()==0) continue;//如果格子为空
+                if((*i)[y].size()==0) continue;
                 // chrono::high_resolution_clock::time_point insert_start=chrono::high_resolution_clock::now();
-                list<Btable> L=Circle_Multiply_Without_Bitmap((*B_iter)[x],(*i)[y]);
+                list<Btable> L=Circle_Multiply_Without_Bitstring((*B_iter)[x],(*i)[y]);
                 count++;
                 // cout<<chrono::duration_cast<std::chrono::milliseconds>(chrono::high_resolution_clock::now() - insert_start).count()<<endl;
                 Mul_result[x+y].insert(Mul_result[x+y].end(),L.begin(),L.end());
@@ -281,10 +267,10 @@ void Path_Wrong() {
         B_iter->swap(Mul_result);
         for(int x=1;x<B_iter->size()-1;x++)
         {
-            removal((*B_iter)[x]);
+            Redundant_without_merging((*B_iter)[x]);
             if(B.size()==2) (*B_iter)[x+1].insert((*B_iter)[x+1].end(),(*B_iter)[x].begin(),(*B_iter)[x].end());
         }
-        removal((*B_iter)[B_iter->size()-1]);
+        Redundant_without_merging((*B_iter)[B_iter->size()-1]);
         auto index_delete=i;
         i++;
         B.erase(index_delete); 
@@ -298,25 +284,20 @@ int main(int argc, char* argv[])
 {
     
     int stride=stoi(argv[1]);
-    inputData();
-
-
+    Input_data();
     auto start_time = std::chrono::high_resolution_clock::now();
-    creatTableB();
-    Path_Assign(stride);
-    
-    Path_Wrong();
-    
+    Creat_Btable();
+    Parallel_blocking(stride);
+    Merge_blocks();
 
     auto end_time = std::chrono::high_resolution_clock::now();
-
     auto duration = chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     cout << "program executing time" << duration.count() << "ms" << std::endl;
     // cout <<duration.count();
 
     
     
-    //输出时间：(概率，cost)
+    //print time：(probability，cost)
     // for(auto &i:B)
     // {
 
@@ -335,7 +316,7 @@ int main(int argc, char* argv[])
     // }
 
 
-    // string X="[",Y="[",Z="[";//用X,Y,Z存放坐标值
+// string X="[",Y="[",Z="[";//X, Y, Z are used to store time, cost, probability, respectively.
     // for(auto &i:B)
     // {
 

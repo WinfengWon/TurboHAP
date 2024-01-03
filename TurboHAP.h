@@ -2,13 +2,13 @@
 #include<assert.h>
 #include <vector>
 using namespace std;
-#define NodeNumber 70
-#define FUtypeNumber 2 //FU类型的最大数量
-#define EntryNumber 2 //每个FU类型允许的最大entry数量
-#define TimeColum 10 //允许每个node的最高时间
-#define DebugTableB false //设置是否输出表格B
-#define GAMA 1e-30 //定义比较概率时候的精确度
-//存放输入数据(time,probability,cost)
+#define NodeNumber 70 //Maximum number of nodes
+#define FUtypeNumber 2 //Maximum number of FU types
+#define EntryNumber 2 //Maximum number of entries within a FU type of a node
+#define TimeColum 20 //Maximum allowed time for each node
+#define DebugTableB false //Set whether to output B table
+#define GAMA 1e-30
+
 struct TimProCos {
     int time;
     double probability;
@@ -19,76 +19,72 @@ struct TimProCos {
         cost = c;
     }
 };
-TimProCos Data[NodeNumber][FUtypeNumber][EntryNumber];//用于存放数据
+TimProCos Data[NodeNumber][FUtypeNumber][EntryNumber];//Store input data
 
 struct Event{
-    vector<unsigned int> bitmaps;
+    vector<unsigned int> bit_string;
     double prob;
-    unsigned int start; //记录当前的事件序列的起始节点，如步长为3时：0、1、2为一组；3、4、5为一组。
-    unsigned int end;   //记录当前的事件序列的结束节点
-    vector<int> FUtypeArr;
+    unsigned int start; //Record the starting node of current event sequence
+    unsigned int end;   //Record the ending node of current event sequence
+    vector<int> FUtypeArr; //Record assignment
     Event(){
-        bitmaps.push_back(0);
+        bit_string.push_back(0);
         prob=1.0;
     }
 
-    /*输入type和n，前者代表FU类型，后者代表事件
-    其中，0代表初始化事件0，1代表初始化事件0、1。*/
-    void initial(unsigned int FUtype,unsigned int n,unsigned int s)
+    /*`e` represents event. Specifically, 
+    `e==0` represents the last bit of bit_string set as `1`;
+    `e==1` represents the last 2 bit of bit_string set as `1`;*/
+    void initial(unsigned int FUtype,unsigned int e,unsigned int s)
     {
-        SetBit(0,n);
+        SetBit(0,e);
         start=s;
         end=s;
         FUtypeArr.push_back(FUtype);
     }
 
-    //设置给定第n个bit为1，n从0开始计
+    //Set the n-th bit of bit_string as `1`, `n` starts from `0`
     bool SetBit(unsigned int n){
-        while(n/32+1>bitmaps.size())
+        while(n/32+1>bit_string.size())
         {
-            bitmaps.push_back(0);
+            bit_string.push_back(0);
         }
-        bitmaps[n/32]=bitmaps[n/32]|1<<n%32;
+        bit_string[n/32]=bit_string[n/32]|1<<n%32;
         return true;
     }
-    //设置给定第n个bit为0，n从0开始计
+    //Set the n-th bit of bit_string as `0`
     bool ResetBit(unsigned int n){
-        assert(n/32<bitmaps.size());//由于n/32是从0开始计算的，那么它应该小于bitmaps的元素数
-        bitmaps[n/32]=bitmaps[n/32]&~(1<<n%32);
+        // assert(n/32<bit_string.size());
+        bit_string[n/32]=bit_string[n/32]&~(1<<n%32);
         return true;
     }
-    //从l位到r位全部置位(包括l和r本身)
+    //Set all bits from index `l` to index `r` as `1`, including `l` and `r`
     bool SetBit(unsigned int l,unsigned int r){
-        while(r/32+1>bitmaps.size())
-            bitmaps.push_back(0);
+        while(r/32+1>bit_string.size())
+            bit_string.push_back(0);
         for(unsigned int i=l;i<=r;i++)
             SetBit(i);
         return true;
     }
-    //按照16进制的格式，打印Event。越下越右边
-    void Print(){
-        for(vector<unsigned int>::iterator i=bitmaps.begin();i<bitmaps.end();i++)
-            printf("%#.8X\n",*i);
-    }
-    void Update(int FUtype,unsigned int flag){//前面FU类型，后面事件。传入0代表当前位置选择事件0，传入1代表当前位置选择事件1、0
-        unsigned int length=bitmaps.size()*32;
-        Event new_bitmaps;
+    void Update(int FUtype,unsigned int flag){ //Update bit_string and assignment
+        unsigned int length=bit_string.size()*32;
+        Event new_bit_string;
         for(unsigned int i=0;i<length;i++){
-            if(bitmaps[i/32]&1<<i%32){
+            if(bit_string[i/32]&1<<i%32){
                 if(flag==1){
                     unsigned int n=2*i;
-                    new_bitmaps.SetBit(n);
-                    new_bitmaps.SetBit(n+1);
+                    new_bit_string.SetBit(n);
+                    new_bit_string.SetBit(n+1);
                 }
                 else{
                     unsigned int n=2*i; 
-                    new_bitmaps.SetBit(n);
+                    new_bit_string.SetBit(n);
                 }
             }
         }
         FUtypeArr.push_back(FUtype);
         end++;
-        bitmaps=move(new_bitmaps.bitmaps);
+        bit_string=move(new_bit_string.bit_string);
         return;
     }
 
@@ -97,15 +93,15 @@ struct Btable:Event
 {
     int cost;
     int time;
-    int FUtype;//FU类型
-    int entry; //事件
+    int FUtype;
+    int entry;
     Btable(){}
-    void UnionTwoE(vector<unsigned int> &rbitmaps)//算得的概率放在this->prob
+    void UnionTwoE(vector<unsigned int> &rbit_string) //Union 2 bit_string
     {
-        unsigned int length=rbitmaps.size()*32;
+        unsigned int length=rbit_string.size()*32;
         for(int i=0;i<length;i++)
         {
-            if(rbitmaps[i/32]&1<<i%32&&!(bitmaps[i/32]&1<<i%32))
+            if(rbit_string[i/32]&1<<i%32&&!(bit_string[i/32]&1<<i%32))
             {
                 prob+=Add_prob(i);
                 SetBit(i);
@@ -134,13 +130,9 @@ struct Btable:Event
 };
 
 
-//定义全局变量
-// list <Btable> D[NodeNumber][TimeColum*NodeNumber]; //表格允许的最高时间=TimeColum*NodeNumber
-// list <Btable> B[NodeNumber][TimeColum];
-
-list<vector<list<Btable>>> B;//B就代替了之前的B和D，B最外层是list，当合并的时候，就删除掉被合并的节点。
-
-int EntryNumOfData[NodeNumber][FUtypeNumber]={0};//记录每个node的每个FU类型有多少种Time可能
+//Define global variables
+list<vector<list<Btable>>> B; //Use B replace the B and D of DAG_Heu
+int EntryNumOfData[NodeNumber][FUtypeNumber]={0}; //Record the number of entries within each FU type of each node
 int MaxTimeOfB[NodeNumber]={0};
-int Node_num;//实际输入的node数量
+int Node_num; //Number of nodes of input 
 int count_equal = 0;
