@@ -294,9 +294,7 @@ int main(int argc, char* argv[])
     auto duration = chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     cout << "program executing time" << duration.count() << "ms" << std::endl;
     // cout <<duration.count();
-
-    
-    
+  
     //print time：(probability，cost)
     // for(auto &i:B)
     // {
