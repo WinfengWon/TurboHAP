@@ -33,6 +33,6 @@ We use the popular transformer model as the graph structure, which is actually t
 The node data is the same as that in path.  
 The graph of transformer is as follows.
 
-<img src="https://github.com/WinfengWon/TurboHAP/assets/153063846/13ebe7ef-c611-4a2d-81f2-2a3c741dcf1c" alt="图片描述" width="300">
+<img src="https://github.com/WinfengWon/TurboHAP/assets/153063846/13ebe7ef-c611-4a2d-81f2-2a3c741dcf1c" alt="No description" width="300">
 
 The image is cited from "[Attention Is All You Need](https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)"

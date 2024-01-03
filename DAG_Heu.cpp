@@ -5,12 +5,11 @@
 #include <assert.h>
 #include<math.h>
 #include <chrono>
-//宏定义
 #define NodeNumber 70
-#define FUtypeNumber 2 //FU类型的最大数量
-#define EntryNumber 2 //每个FU类型允许的最大entry数量
-#define TimeColum 20 //允许每个node的最高时间
-#define DebugTableB true //设置是否输出表格B
+#define FUtypeNumber 2 //Maximum number of FU types
+#define EntryNumber 2 //Maximum number of entries within a FU type of a node
+#define TimeColum 20 //Maximum allowed time for each node
+#define DebugTableB true //Set whether to output B table
 #define GAMA 1e-30
 using namespace std;
 
@@ -33,22 +32,21 @@ struct TimProCos {
         cost = c;
     }
 };
-//定义全局变量
-list <ProbAndCostPair> D[NodeNumber][TimeColum*NodeNumber]; //表格允许的最高时间=TimeColum*NodeNumber
-list <ProbAndCostPair> B[NodeNumber][TimeColum];//表格B，存放每个node自身信息
+// Define global variables
+list <ProbAndCostPair> D[NodeNumber][TimeColum*NodeNumber]; //Maximum allowed time for D table = TimeColum*NodeNumber
+list <ProbAndCostPair> B[NodeNumber][TimeColum]; //B table, stores information about each node itself
 TimProCos Data[NodeNumber][FUtypeNumber][EntryNumber];
-int EntryNumOfData[NodeNumber][FUtypeNumber]={0};//记录每个node的每个FU类型有多少种Time可能
-int MaxTimeOfB[NodeNumber]={0};
-int Node_num;//实际输入的node数量
+int EntryNumOfData[NodeNumber][FUtypeNumber]={0}; //Record how many time variation within each FU type of each node has
+int MaxTimeOfB[NodeNumber]={0}; //Record maximum time of each node
+int Node_num; //number of nodes of input 
 int count_equal = 0;
 
 void inputData() {
     cin >> Node_num;
     for (int i = 0; i < Node_num; i++) {
-        int FU_num; cin >> FU_num;//当前node有多少个FU类型
+        int FU_num; cin >> FU_num; //How many FU types the current node has
         for (int j = 0; j < FU_num; j++) {
-            int entry_num; cin >> entry_num;//当前FU类型有多少个输入(即有多少种Time可能)
-            EntryNumOfData[i][j]=entry_num;
+            int entry_num; cin >> entry_num; //How many entries the current FU type has
             for (int k = 0; k < entry_num; k++) {
                 int time, cost;
                 double probability;
@@ -64,9 +62,6 @@ bool compare(const ProbAndCostPair &a, const ProbAndCostPair &b)
 {
     return a.prob < b.prob;
 }
-/*
-* 参数用的是引用
-*/
 void removal(list<ProbAndCostPair>& L)
 {
     L.sort(compare);
@@ -104,21 +99,14 @@ void removal(list<ProbAndCostPair>& L)
     }
     return;
 }
-void PrintPair(list<ProbAndCostPair>& L)
-{
-    for (list<ProbAndCostPair>::iterator i = L.begin(); i != L.end(); i++)
-        printf("<%f,%d>...", i->prob, i->cost);
-}
-
 void creatTableB() {
     for (int i = 0; i < Node_num; i++) {
-        //Bentry放累加之后的项目，BentryBuffer用来进行累加；
         list <TimProCos> Bentry;
         TimProCos a;
         double accumulate;
-        int time=0;//记录当前node的最高时间
+        int time=0; //time is uesd to temporarily record the maximum time of current node
         for (int j = 0; j<FUtypeNumber; j++){
-            accumulate=0; //每次一个新类型，都需要归零accumulate   
+            accumulate=0; //For a new FU type, set accumulate as 0  
             for (int k = 0; k < EntryNumOfData[i][j]; k++) {
                 a = Data[i][j][k];
                 accumulate+=Data[i][j][k].probability;
@@ -127,23 +115,21 @@ void creatTableB() {
                 Bentry.insert(Bentry.end(),a);
             }
         }
-        //循环之后，Bentry里面放的是一个node的所有类型的所有entry
         for(list<TimProCos>::iterator it=Bentry.begin();it!=Bentry.end();it++)
         {
-            //time以1为开始，也即0列什么也不存
             if(it->time>time)   time=it->time;
-            B[i][it->time].push_back(ProbAndCostPair(it->probability,it->cost));
+            B[i][it->time].push_back(ProbAndCostPair(it->probability,it->cost)); // insert pair into linked list
         }
         MaxTimeOfB[i]=time;    
         for(int t=2;t<=time;t++)
         {
-            B[i][t].insert(B[i][t].end(),B[i][t-1].begin(),B[i][t-1].end());//把前面一个格子的数据加到当前格子
-            removal(B[i][t]);
+            B[i][t].insert(B[i][t].end(),B[i][t-1].begin(),B[i][t-1].end()); //appending
+            removal(B[i][t]); //applying redundant
             if(i==0)
-            D[i][t]=B[i][t];//让D1,j=B1,j
+            D[i][t]=B[i][t]; //For i==0, D(0,j)=B(0,j)
         }
-        if(i==0) D[0][1]=B[0][1];//上面t从2开始，需要补上这个1
-        //以下模块用于输出Table B的信息
+        if(i==0) D[0][1]=B[0][1];
+        //The following module is used to output the information of B table
 /*         if(DebugTableB){
             printf("node %d:\n",i);
             for(int t=1;t<=time;t++)
@@ -170,11 +156,11 @@ void Path_Assign() {
         min_t=TimeColum*NodeNumber+1;
         for(;t<TimeColum*NodeNumber;t++){
             for(int k=1;k<=MaxTimeOfB[i];k++){
-                if(B[i][k].empty()) continue;//如果B[i][k]对应的格子为空，则跳过本轮
-                if(t-k<1) break;//如果t-k<=0，则结束本循环
+                if(B[i][k].empty()) continue;
+                if(t-k<1) break;
                 if(D[i-1][t-k].empty()) continue;
                 else{
-                    if(min_t>t) min_t=t;//记录本轮最小的t
+                    if(min_t>t) min_t=t;
                     list<ProbAndCostPair> L=Circle_Multiply(D[i-1][t-k],B[i][k]);
                     D[i][t].insert(D[i][t].end(),L.begin(),L.end());
                 }
@@ -210,7 +196,7 @@ int main(int argc, char* argv[])
     // }
 
 
-    // string X="[",Y="[",Z="[";//用X,Y,Z存放坐标值
+    // string X="[",Y="[",Z="[";//X, Y, Z are used to store time, cost, probability, respectively.
     // for(int x=1;x<=TimeColum*NodeNumber;x++)
     // {
     //     if(D[Node_num-1][x].empty()) continue;
@@ -232,45 +218,4 @@ int main(int argc, char* argv[])
     // cout<<Z<<'\n';
     return 0;
 }
-
-/*
-input:
-total node number N
-FU_type number for node 0
-entry number for FU_type 0
-T P C
-T P C
-entry number for FU_type 1
-T P C
-T P C
-FU_type number for node 1
-entry number for FU_type 0
-...
-
-
-3
-2
-2
-1 0.9 10
-2 0.1 10
-2
-2 0.7 4
-4 0.3 4
-2
-2
-1 0.8 8
-2 0.2 8
-2
-3 0.6 3
-4 0.4 3
-2
-2
-2 0.65 11
-3 0.35 11
-2
-4 0.9 5
-5 0.1 5
-
-
-*/
 
